@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — The Kelm &amp; Maloa</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #060C18;
+    --surface:  #0A1628;
+    --surface2: #0F1F3A;
+    --border:   #1E3A5F;
+    --accent:   #7BB8E8;
+    --accent2:  #E8A020;
+    --text:     #F5F7FA;
+    --text2:    #8AAFC8;
+    --text3:    #4A6A88;
+    --green:    #2ECC8A;
+    --yellow:   #E8A020;
+    --red:      #E84848;
+    --mono: 'Inter', sans-serif;
+    --sans: 'Inter', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; overflow-x:hidden; }
+  body::before {
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image: linear-gradient(rgba(123,184,232,.03) 1px,transparent 1px), linear-gradient(90deg,rgba(123,184,232,.03) 1px,transparent 1px);
+    background-size:40px 40px;
+  }
+
+  /* HEADER */
+  header {
+    position:sticky; top:0; z-index:100;
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+    padding:16px 28px;
+    background:rgba(6,12,24,.92); backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border);
+  }
+  .logo { font-size:13px; font-weight:700; letter-spacing:.15em; color:var(--accent); text-transform:uppercase; }
+  .logo span { color:var(--text3); font-weight:400; }
+
+  /* STORE SELECTOR */
+  .store-tabs { display:flex; gap:4px; }
+  .store-tab {
+    font-family:var(--mono); font-size:11px; font-weight:500;
+    padding:6px 14px; border-radius:6px; cursor:pointer; border:1px solid var(--border);
+    background:transparent; color:var(--text3); text-transform:uppercase; letter-spacing:.08em;
+    transition:all .15s;
+  }
+  .store-tab:hover { border-color:var(--accent); color:var(--accent); }
+  .store-tab.active { background:var(--accent); border-color:var(--accent); color:var(--bg); }
+
+  /* DATE CONTROLS */
+  .header-right { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .date-controls { display:flex; align-items:center; gap:8px; }
+  .date-controls label { font-family:var(--mono); font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; }
+  .date-controls input[type=date] {
+    background:var(--surface2); border:1px solid var(--border); color:var(--text);
+    font-family:var(--mono); font-size:12px; padding:6px 10px; border-radius:6px;
+    outline:none; cursor:pointer; color-scheme:dark;
+  }
+  .date-controls input[type=date]:focus { border-color:var(--accent); }
+  .btn { background:var(--accent); color:var(--bg); border:none; font-family:var(--sans); font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:7px 14px; border-radius:6px; cursor:pointer; transition:opacity .15s; }
+  .btn:hover { opacity:.85; }
+  .sync-badge { font-family:var(--mono); font-size:11px; color:var(--text3); display:flex; align-items:center; gap:6px; }
+  .sync-dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* MAIN */
+  main { position:relative; z-index:1; padding:24px 28px; max-width:1440px; margin:0 auto; }
+
+  /* COGS BAR */
+  .cogs-bar {
+    display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+    padding:12px 18px; background:var(--surface); border:1px solid var(--border); border-radius:10px; margin-bottom:22px;
+  }
+  .cogs-bar-label { font-family:var(--mono); font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.1em; white-space:nowrap; }
+  .cogs-inputs { display:flex; gap:14px; flex-wrap:wrap; }
+  .cogs-field { display:flex; align-items:center; gap:7px; }
+  .cogs-field label { font-family:var(--mono); font-size:12px; color:var(--text2); }
+  .cogs-field input {
+    background:var(--surface2); border:1px solid var(--border); color:var(--text);
+    font-family:var(--mono); font-size:13px; padding:5px 10px; border-radius:6px; width:80px; outline:none; text-align:right;
+  }
+  .cogs-field input:focus { border-color:var(--accent); }
+  .btn-ghost { background:transparent; border:1px solid var(--border); color:var(--text2); font-family:var(--mono); font-size:11px; padding:6px 12px; border-radius:6px; cursor:pointer; transition:all .15s; white-space:nowrap; }
+  .btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* SECTION HEADER */
+  .section-header { display:flex; align-items:baseline; gap:12px; margin-bottom:14px; }
+  .section-title { font-size:11px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:var(--text3); white-space:nowrap; }
+  .section-line { flex:1; height:1px; background:var(--border); }
+
+  /* SUMMARY CARDS */
+  .summary-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:10px; margin-bottom:24px; }
+  .card {
+    background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px;
+    position:relative; overflow:hidden; transition:border-color .2s;
+  }
+  .card:hover { border-color:var(--accent); }
+  .card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--accent),transparent); opacity:0; transition:opacity .2s; }
+  .card:hover::before { opacity:1; }
+  .card-label { font-family:var(--mono); font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:.1em; margin-bottom:7px; }
+  .card-value { font-size:21px; font-weight:800; color:var(--text); line-height:1; letter-spacing:-.02em; }
+  .card-value.accent { color:var(--accent); }
+  .card-value.green  { color:var(--green); }
+  .card-value.red    { color:var(--red); }
+  .card-value.yellow { color:var(--yellow); }
+
+  /* BREAKDOWN */
+  .breakdown-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:24px; }
+  .cat-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .cat-header { padding:11px 16px; background:var(--surface2); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .cat-title { font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  .cat-title.always-on { color:var(--green); }
+  .cat-title.testing   { color:var(--accent); }
+  .cat-title.otros     { color:var(--text3); }
+  .cat-badge { font-family:var(--mono); font-size:10px; padding:3px 8px; border-radius:4px; letter-spacing:.05em; }
+  .cat-badge.always-on { background:rgba(46,204,138,.1); color:var(--green); }
+  .cat-badge.testing   { background:rgba(123,184,232,.1); color:var(--accent); }
+  .cat-badge.otros     { background:rgba(74,106,136,.1);  color:var(--text3); }
+  .cat-metrics { padding:14px 16px; display:grid; grid-template-columns:1fr 1fr; gap:11px 8px; }
+  .cat-metric-label { font-family:var(--mono); font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; margin-bottom:3px; }
+  .cat-metric-value { font-size:15px; font-weight:700; color:var(--text); }
+
+  /* SEMAFORO */
+  .semaforo { display:inline-flex; align-items:center; gap:4px; font-family:var(--mono); font-size:11px; padding:2px 7px; border-radius:4px; }
+  .semaforo::before { content:'●'; font-size:7px; }
+  .semaforo.red    { background:rgba(232,72,72,.1);   color:var(--red); }
+  .semaforo.yellow { background:rgba(232,160,32,.1);  color:var(--yellow); }
+  .semaforo.green  { background:rgba(46,204,138,.1);  color:var(--green); }
+  .semaforo.strong { background:rgba(46,204,138,.2);  color:#5eedb5; }
+
+  /* CHART */
+  .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px 22px; margin-bottom:24px; }
+  #chart-canvas { width:100%; height:200px; }
+
+  /* STATES */
+  .state-overlay { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px 20px; gap:16px; }
+  .state-overlay p { font-family:var(--mono); font-size:13px; color:var(--text3); text-align:center; }
+  .spinner { width:30px; height:30px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* FOOTER */
+  footer { position:relative; z-index:1; padding:18px 28px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+  footer span { font-family:var(--mono); font-size:11px; color:var(--text3); }
+
+  /* RESPONSIVE */
+  @media(max-width:900px) {
+    header { padding:14px 16px; }
+    main { padding:16px; }
+    .breakdown-grid { grid-template-columns:1fr; }
+    .summary-grid { grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div class="logo">Performance <span>/ Dashboard</span></div>
+    <div class="store-tabs">
+      <button class="store-tab active" onclick="setStore('kelm')">The Kelm</button>
+      <button class="store-tab" onclick="setStore('maloa')">Maloa</button>
+      <button class="store-tab" onclick="setStore('both')">Both</button>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="date-controls">
+      <label>From</label>
+      <input type="date" id="date-from">
+      <label>To</label>
+      <input type="date" id="date-to">
+      <button class="btn" onclick="renderDashboard()">Apply</button>
+    </div>
+    <div class="sync-badge">
+      <div class="sync-dot"></div>
+      <span id="last-sync">Loading...</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Loading -->
+  <div id="loading-state" class="state-overlay">
+    <div class="spinner"></div>
+    <p>Connecting to Sheets...</p>
+  </div>
+
+  <!-- Setup -->
+  <div id="config-state" class="state-overlay" style="display:none">
+    <div style="font-size:28px;opacity:.4">⚙️</div>
+    <p>Paste your Apps Script Web App URL to connect.</p>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;justify-content:center;">
+      <input id="sheets-url-input" placeholder="https://script.google.com/macros/s/..."
+        style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 12px;border-radius:6px;width:380px;outline:none;">
+      <button class="btn" onclick="saveSheetUrl()">Connect</button>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard-content" style="display:none">
+
+    <!-- Supplier Payments -->
+<div class="cogs-bar">
+  <span class="cogs-bar-label">Supplier Payment</span>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <div class="cogs-field">
+      <label>Date</label>
+      <input type="date" id="payment-date" style="width:140px;" color-scheme="dark">
+    </div>
+    <div class="cogs-field">
+      <label>Store</label>
+      <select id="payment-store" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:5px 10px;border-radius:6px;outline:none;">
+        <option value="kelm">The Kelm</option>
+        <option value="maloa">Maloa</option>
+      </select>
+    </div>
+    <div class="cogs-field">
+      <label>Amount</label>
+      <input type="number" id="payment-amount" placeholder="0.00" step="0.01" min="0" style="width:100px;">
+    </div>
+    <button class="btn" onclick="savePayment()">Save</button>
+  </div>
+  <div id="payment-feedback" style="font-family:var(--mono);font-size:11px;color:var(--green);display:none;">✓ Saved</div>
+</div>
+
+    <div class="section-header">
+      <span class="section-title">Total Period</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="summary-grid" id="summary-cards"></div>
+
+    <div class="section-header">
+      <span class="section-title">By Campaign Category</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="breakdown-grid" id="breakdown-grid"></div>
+
+    <div class="section-header">
+      <span class="section-title">Daily Earnings vs Spend</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="chart-card">
+      <canvas id="chart-canvas"></canvas>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span id="store-label-footer">—</span>
+  <span id="footer-range">—</span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ── STATE ────────────────────────────────────────────────────
+const KEY_URL = 'kelm_sheets_url';
+let RAW = null;
+let CHART = null;
+let STORE = 'kelm';
+
+const ROAS_T = { red:1.61, yellow:1.77, green:2.42 };
+const STORE_LABELS = { kelm:'The Kelm', maloa:'Maloa', both:'Both Stores' };
+
+// ── INIT ─────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const today = new Date();
+  const from  = new Date(today.getFullYear(), today.getMonth(), 1);
+  document.getElementById('date-from').value = fmtDate(from);
+  document.getElementById('date-to').value   = fmtDate(today);
+
+  const url = localStorage.getItem(KEY_URL);
+  if (!url) {
+    show('config-state');
+  } else {
+    fetchData(url);
+  }
+});
+
+// ── STORE SWITCH ─────────────────────────────────────────────
+function setStore(s) {
+  STORE = s;
+  document.querySelectorAll('.store-tab').forEach((el, i) => {
+    el.classList.toggle('active', ['kelm','maloa','both'][i] === s);
+  });
+  if (RAW) renderDashboard();
+}
+
+// ── URL SETUP ────────────────────────────────────────────────
+function saveSheetUrl() {
+  const val = document.getElementById('sheets-url-input').value.trim();
+  if (!val) return;
+  localStorage.setItem(KEY_URL, val);
+  show('loading-state');
+  fetchData(val);
+}
+
+// ── FETCH ────────────────────────────────────────────────────
+async function fetchData(url) {
+  try {
+    const res  = await fetch(url);
+    const json = await res.json();
+    RAW = json;
+    document.getElementById('last-sync').textContent = 'Last sync ' + timeAgo(json.lastSync);
+    show('dashboard-content');
+    renderDashboard();
+  } catch(e) {
+    document.getElementById('loading-state').innerHTML =
+      `<div style="font-size:28px;opacity:.4">⚠️</div><p>Could not load data.<br>${e.message}</p>`;
+    show('loading-state');
+  }
+}
+
+// ── RENDER ───────────────────────────────────────────────────
+function renderDashboard() {
+  const from = document.getElementById('date-from').value;
+  const to   = document.getElementById('date-to').value;
+  document.getElementById('footer-range').textContent = `${from} → ${to}`;
+  document.getElementById('store-label-footer').textContent = STORE_LABELS[STORE];
+
+  const rows = getFilteredRows(from, to);
+  renderPaymentBar();
+  renderSummary(rows);
+  renderBreakdown(rows);
+  renderChart(rows);
+}
+
+// ── FILTER ───────────────────────────────────────────────────
+function getFilteredRows(from, to) {
+  if (!RAW) return [];
+  return RAW.dashboard.filter(r => {
+    const rowDate = normalizeDate(r.date);
+    return (STORE === 'both' || r.store === STORE) && rowDate >= from && rowDate <= to;
+  });
+}
+
+function normalizeDate(val) {
+  if (!val) return '';
+  if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return '';
+  return d.toISOString().split('T')[0];
+}
+
+// ── PAYMENT BAR ──────────────────────────────────────────────
+function renderPaymentBar() {
+  const paymentDate = document.getElementById('payment-date');
+  if (paymentDate && !paymentDate.value) {
+    paymentDate.value = fmtDate(new Date());
+  }
+  const paymentStore = document.getElementById('payment-store');
+  if (paymentStore && STORE !== 'both') {
+    paymentStore.value = STORE;
+  }
+}
+
+async function savePayment() {
+  const date   = document.getElementById('payment-date').value;
+  const store  = document.getElementById('payment-store').value;
+  const amount = parseFloat(document.getElementById('payment-amount').value);
+  const url    = localStorage.getItem(KEY_URL);
+
+  if (!date || !store || !amount || amount <= 0) return;
+
+  try {
+    await fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ action: 'savePayment', date, store, amount })
+    });
+
+    const fb = document.getElementById('payment-feedback');
+    fb.style.display = 'inline';
+    setTimeout(() => fb.style.display = 'none', 2000);
+
+    document.getElementById('payment-amount').value = '';
+    await fetchData(url);
+  } catch(e) {
+    console.error('Error saving payment:', e);
+  }
+}
+
+function getProductCost() {
+  if (!RAW || !RAW.supplier_payments) return 0;
+  const from = document.getElementById('date-from').value;
+  const to   = document.getElementById('date-to').value;
+  return RAW.supplier_payments
+    .filter(p => {
+      const d = normalizeDate(p.date);
+      const storeMatch = STORE === 'both' || p.store === STORE;
+      return storeMatch && d >= from && d <= to;
+    })
+    .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+}
+
+// ── AGGREGATE ────────────────────────────────────────────────
+function aggregate(rows) {
+  let spend=0, earnings=0, orders=0;
+  rows.forEach(r => { spend+=+r.spend||0; earnings+=+r.earnings||0; orders+=+r.orders||0; });
+  const productCost  = getProductCost();
+  const fees         = earnings * 0.045;
+  const costs        = spend + productCost + fees;
+  const profit       = earnings - costs;
+  return {
+    spend, earnings, orders, productCost, fees, costs, profit,
+    profitMargin: earnings>0 ? profit/earnings : 0,
+    roas:  spend>0  ? earnings/spend  : 0,
+    cpa:   orders>0 ? spend/orders    : 0,
+    aov:   orders>0 ? earnings/orders : 0
+  };
+}
+
+// ── SUMMARY ──────────────────────────────────────────────────
+function renderSummary(rows) {
+  const m   = aggregate(rows);
+  const sem = roasSem(m.roas);
+  const cards = [
+    { label:'Earnings',      value:fmt$(m.earnings),       cls:'accent' },
+    { label:'Facebook Cost', value:fmt$(m.spend),          cls:'' },
+    { label:'Product Cost',  value:fmt$(m.productCost),    cls:'' },
+    { label:'Fees (4.5%)',   value:fmt$(m.fees),           cls:'' },
+    { label:'Total Costs',   value:fmt$(m.costs),          cls:'' },
+    { label:'Profit',        value:fmt$(m.profit),         cls: m.profit>=0?'green':'red' },
+    { label:'Profit Margin', value:fmtPct(m.profitMargin), cls: m.profitMargin>=.15?'green':m.profitMargin>=0?'yellow':'red' },
+    { label:'ROAS',          value:m.roas.toFixed(2)+'x',  cls:'', extra:`<div style="margin-top:5px">${sem}</div>` },
+    { label:'CPA',           value:fmt$(m.cpa),            cls:'' },
+    { label:'AOV',           value:fmt$(m.aov),            cls:'' },
+    { label:'Orders',        value:m.orders,               cls:'' },
+  ];
+  document.getElementById('summary-cards').innerHTML = cards.map(c=>`
+    <div class="card">
+      <div class="card-label">${c.label}</div>
+      <div class="card-value ${c.cls}">${c.value}</div>
+      ${c.extra||''}
+    </div>`).join('');
+}
+
+// ── BREAKDOWN ────────────────────────────────────────────────
+function renderBreakdown(rows) {
+  const cats   = ['always-on','testing','otros'];
+  const labels = { 'always-on':'Always-On', testing:'Testing', otros:'Otros' };
+  document.getElementById('breakdown-grid').innerHTML = cats.map(cat => {
+    const m   = aggregate(rows.filter(r=>r.category===cat));
+    const sem = roasSem(m.roas);
+    return `<div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-title ${cat}">${labels[cat]}</span>
+        <span class="cat-badge ${cat}">${m.orders} orders</span>
+      </div>
+      <div class="cat-metrics">
+        <div><div class="cat-metric-label">Earnings</div><div class="cat-metric-value">${fmt$(m.earnings)}</div></div>
+        <div><div class="cat-metric-label">FB Spend</div><div class="cat-metric-value">${fmt$(m.spend)}</div></div>
+        <div><div class="cat-metric-label">ROAS</div><div class="cat-metric-value">${m.roas.toFixed(2)}x &nbsp;${sem}</div></div>
+        <div><div class="cat-metric-label">CPA</div><div class="cat-metric-value">${fmt$(m.cpa)}</div></div>
+        <div><div class="cat-metric-label">Profit</div><div class="cat-metric-value" style="color:${m.profit>=0?'var(--green)':'var(--red)'}">${fmt$(m.profit)}</div></div>
+        <div><div class="cat-metric-label">AOV</div><div class="cat-metric-value">${fmt$(m.aov)}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── CHART ────────────────────────────────────────────────────
+function renderChart(rows) {
+  const byDate = {};
+  rows.forEach(r => {
+    const d = normalizeDate(r.date);
+    if (!d) return;
+    if (!byDate[d]) byDate[d] = { earnings:0, spend:0 };
+    byDate[d].earnings += +r.earnings||0;
+    byDate[d].spend    += +r.spend||0;
+  });
+  const dates    = Object.keys(byDate).sort();
+  const earnings = dates.map(d => byDate[d].earnings);
+  const spend    = dates.map(d => byDate[d].spend);
+
+  const ctx = document.getElementById('chart-canvas').getContext('2d');
+  if (CHART) CHART.destroy();
+  CHART = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: dates.map(d => d.slice(5)),
+      datasets:[
+        { label:'Earnings', data:earnings, backgroundColor:'rgba(123,184,232,.5)', borderColor:'rgba(123,184,232,.9)', borderWidth:1, borderRadius:3 },
+        { label:'FB Spend', data:spend,    backgroundColor:'rgba(232,160,32,.4)',  borderColor:'rgba(232,160,32,.8)',  borderWidth:1, borderRadius:3 }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ labels:{ color:'#8AAFC8', font:{ family:'Inter', size:11 } } },
+        tooltip:{ backgroundColor:'#0F1F3A', borderColor:'#1E3A5F', borderWidth:1, titleColor:'#7BB8E8', bodyColor:'#F5F7FA',
+          callbacks:{ label: c=>' '+c.dataset.label+': $'+c.parsed.y.toFixed(1) } }
+      },
+      scales:{
+        x:{ grid:{color:'rgba(30,58,95,.4)'}, ticks:{color:'#4A6A88', font:{family:'Inter',size:10}} },
+        y:{ grid:{color:'rgba(30,58,95,.4)'}, ticks:{color:'#4A6A88', font:{family:'Inter',size:10}, callback:v=>'$'+v.toFixed(0)} }
+      }
+    }
+  });
+}
+
+// ── HELPERS ──────────────────────────────────────────────────
+function show(id) {
+  ['loading-state','config-state','dashboard-content'].forEach(s => {
+    document.getElementById(s).style.display = s===id ? (s==='dashboard-content'?'block':'flex') : 'none';
+  });
+}
+function roasSem(roas) {
+  if (roas<=0) return '';
+  if (roas<ROAS_T.red)    return `<span class="semaforo red">RED</span>`;
+  if (roas<ROAS_T.yellow) return `<span class="semaforo yellow">YELLOW</span>`;
+  if (roas<ROAS_T.green)  return `<span class="semaforo green">GREEN</span>`;
+  return `<span class="semaforo strong">STRONG</span>`;
+}
+function fmt$(n)   { return '$'+(n||0).toFixed(1); }
+function fmtPct(n) { return ((n||0)*100).toFixed(1)+'%'; }
+function fmtDate(d){ return d.toISOString().split('T')[0]; }
+function timeAgo(iso) {
+  if (!iso) return '—';
+  const h = Math.floor((Date.now()-new Date(iso).getTime())/3600000);
+  if (h<1) return 'just now';
+  if (h<24) return h+'h ago';
+  return Math.floor(h/24)+'d ago';
+}</script>
+</body>
+</html>
