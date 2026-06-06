@@ -366,11 +366,8 @@ async function savePayment() {
   if (!date || !store || !amount || amount <= 0) return;
 
   try {
-    await fetch(url, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ action: 'savePayment', date, store, amount })
-    });
+    const params = `?action=savePayment&date=${date}&store=${store}&amount=${amount}`;
+    await fetch(url + params);
 
     const fb = document.getElementById('payment-feedback');
     fb.style.display = 'inline';
