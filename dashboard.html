@@ -658,16 +658,34 @@ function drawTrend(def, rows) {
       return getValue(def.id, m, byDate[d]);
     });
 
-    datasets = [{
-      label: 'Total',
-      data,
-      borderColor: CAT_COLORS.total.line,
-      backgroundColor: CAT_COLORS.total.fill,
-      fill: true,
-      tension: 0.3,
-      pointRadius: 3,
-      borderWidth: 2,
-    }];
+    const avgValue = def.id === 'aov'
+  ? data.filter(v => v > 0).reduce((a, b) => a + b, 0) / (data.filter(v => v > 0).length || 1)
+  : null;
+
+datasets = [{
+  label: 'Total',
+  data,
+  borderColor: CAT_COLORS.total.line,
+  backgroundColor: CAT_COLORS.total.fill,
+  fill: true,
+  tension: 0.3,
+  pointRadius: 3,
+  borderWidth: 2,
+}];
+
+if (avgValue !== null) {
+  datasets.push({
+    label: 'Period Avg',
+    data: dates.map(() => avgValue),
+    borderColor: '#F59E0B',
+    backgroundColor: 'transparent',
+    fill: false,
+    tension: 0,
+    pointRadius: 0,
+    borderWidth: 1.5,
+    borderDash: [5, 4],
+  });
+}
   } else {
     const cats = ['always-on','testing','otros'];
     datasets = cats.map(cat => {
