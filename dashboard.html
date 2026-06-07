@@ -591,6 +591,109 @@ function drawTrend(def, rows) {
   const ctx  = document.getElementById(`trend-${def.id}`).getContext('2d');
   if (TREND_CHARTS[def.id]) TREND_CHARTS[def.id].destroy();
 
+  const dates = [...new Set(rows.map(r => normalizeDate(r.date)))].sort();
+
+  // Product cost total del período y por día proporcional
+  const totalProductCost = getProductCost();
+  const totalEarnings    = rows.reduce((s, r) => s + (+r.earnings||0), 0);
+
+  function getDayProductCost(dayRows) {
+    if (totalEarnings <= 0) return 0;
+    const dayEarnings = dayRows.reduce((s, r) => s + (+r.earnings||0), 0);
+    return totalProductCost * (dayEarnings / totalEarnings);
+  }
+
+  function aggregateDay(dayRows) {
+    let spend=0, earnings=0, orders=0;
+    dayRows.forEach(r => { spend+=+r.spend||0; earnings+=+r.earnings||0; orders+=+r.orders||0; });
+    const productCost  = getDayProductCost(dayRows);
+    const fees         = earnings * 0.045;
+    const costs        = spend + productCost + fees;
+    const profit       = earnings - costs;
+    return {
+      spend, earnings, orders, productCost, fees, costs, profit,
+      profitMargin: earnings>0 ? profit/earnings : 0,
+      roas:  spend>0  ? earnings/spend  : 0,
+      cpa:   orders>0 ? spend/orders    : 0,
+      aov:   orders>0 ? earnings/orders : 0
+    };
+  }
+
+  let datasets = [];
+
+  if (mode === 'total') {
+    const byDate = {};
+    dates.forEach(d => byDate[d] = { spend:0, earnings:0, orders:0 });
+    rows.forEach(r => {
+      const d = normalizeDate(r.date);
+      if (!byDate[d]) return;
+      byDate[d].spend    += +r.spend    || 0;
+      byDate[d].earnings += +r.earnings || 0;
+      byDate[d].orders   += +r.orders   || 0;
+    });
+
+    const data = dates.map(d => {
+      const dayRows = rows.filter(r => normalizeDate(r.date) === d);
+      const m = aggregateDay(dayRows);
+      return getValue(def.id, m, byDate[d]);
+    });
+
+    datasets = [{
+      label: 'Total',
+      data,
+      borderColor: CAT_COLORS.total.line,
+      backgroundColor: CAT_COLORS.total.fill,
+      fill: true,
+      tension: 0.3,
+      pointRadius: 3,
+      borderWidth: 2,
+    }];
+  } else {
+    const cats = ['always-on','testing','otros'];
+    datasets = cats.map(cat => {
+      const catRows = rows.filter(r => r.category === cat);
+      const data = dates.map(d => {
+        const dayRows = catRows.filter(r => normalizeDate(r.date) === d);
+        const m = aggregateDay(dayRows);
+        const byDate = { spend:0, earnings:0, orders:0 };
+        dayRows.forEach(r => { byDate.spend+=+r.spend||0; byDate.earnings+=+r.earnings||0; byDate.orders+=+r.orders||0; });
+        return getValue(def.id, m, byDate);
+      });
+      return {
+        label: cat.charAt(0).toUpperCase() + cat.slice(1),
+        data,
+        borderColor: CAT_COLORS[cat].line,
+        backgroundColor: CAT_COLORS[cat].fill,
+        fill: false,
+        tension: 0.3,
+        pointRadius: 3,
+        borderWidth: 2,
+      };
+    });
+  }
+
+  TREND_CHARTS[def.id] = new Chart(ctx, {
+    type: 'line',
+    data: { labels: dates.map(d => d.slice(5)), datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { labels: { color:'#475569', font:{ family:'Inter', size:11 } } },
+        tooltip: {
+          backgroundColor:'#fff', borderColor:'#E2E8F0', borderWidth:1,
+          titleColor:'#0F172A', bodyColor:'#475569',
+          callbacks: { label: c => ' '+c.dataset.label+': '+def.fmt(c.parsed.y) }
+        }
+      },
+      scales: {
+        x: { grid:{color:'rgba(226,232,240,.6)'}, ticks:{color:'#94A3B8', font:{family:'Inter',size:10}} },
+        y: { grid:{color:'rgba(226,232,240,.6)'}, ticks:{color:'#94A3B8', font:{family:'Inter',size:10}, callback: v => def.fmt(v)} }
+      }
+    }
+  });
+}
+
   // Agrupar por fecha
   const dates = [...new Set(rows.map(r => normalizeDate(r.date)))].sort();
 
