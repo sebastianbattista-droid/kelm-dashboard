@@ -152,6 +152,17 @@
     .breakdown-grid { grid-template-columns:1fr; }
     .summary-grid { grid-template-columns:repeat(2,1fr); }
   }
+
+  /* TREND CHARTS */
+.trend-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 20px; }
+.trend-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.trend-title { font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text3); }
+.trend-toggle { display:flex; gap:4px; }
+.trend-btn {
+  font-family:var(--mono); font-size:10px; padding:3px 8px; border-radius:4px;
+  border:1px solid var(--border); background:transparent; color:var(--text3); cursor:pointer; transition:all .15s;
+}
+.trend-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
 </style>
 </head>
 <body>
@@ -238,12 +249,18 @@
     <div class="breakdown-grid" id="breakdown-grid"></div>
 
     <div class="section-header">
-      <span class="section-title">Daily Earnings vs Spend</span>
-      <div class="section-line"></div>
+  <span class="section-title">Daily Earnings vs Spend</span>
+  <div class="section-line"></div>
     </div>
-    <div class="chart-card">
-      <canvas id="chart-canvas"></canvas>
-    </div>
+  <div class="chart-card">
+  <canvas id="chart-canvas"></canvas>
+  </div>
+
+<div class="section-header">
+  <span class="section-title">Trends</span>
+  <div class="section-line"></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:12px;margin-bottom:24px;" id="trend-charts"></div>
   </div>
 </main>
 
@@ -323,6 +340,7 @@ function renderDashboard() {
   renderSummary(rows);
   renderBreakdown(rows);
   renderChart(rows);
+  renderTrendCharts(rows);
 }
 
 // ── FILTER ───────────────────────────────────────────────────
@@ -518,6 +536,147 @@ function timeAgo(iso) {
   if (h<1) return 'just now';
   if (h<24) return h+'h ago';
   return Math.floor(h/24)+'d ago';
-}</script>
+}
+// ── TREND CHARTS ─────────────────────────────────────────────
+const TREND_CHARTS = {};
+const TREND_MODES  = { profit:'total', orders:'total', aov:'total', cpa:'total', roas:'total' };
+
+const TREND_DEFS = [
+  { id:'profit', label:'Profit',   fmt: v => '$'+v.toFixed(1) },
+  { id:'orders', label:'Orders',   fmt: v => v.toFixed(0) },
+  { id:'aov',    label:'AOV',      fmt: v => '$'+v.toFixed(1) },
+  { id:'cpa',    label:'CPA',      fmt: v => '$'+v.toFixed(1) },
+  { id:'roas',   label:'ROAS',     fmt: v => v.toFixed(2)+'x' },
+];
+
+const CAT_COLORS = {
+  total:      { line:'#2563EB', fill:'rgba(37,99,235,.08)' },
+  'always-on':{ line:'#16A34A', fill:'rgba(22,163,74,.08)' },
+  testing:    { line:'#2563EB', fill:'rgba(37,99,235,.08)' },
+  otros:      { line:'#94A3B8', fill:'rgba(148,163,184,.08)' },
+};
+
+function renderTrendCharts(rows) {
+  const container = document.getElementById('trend-charts');
+  container.innerHTML = TREND_DEFS.map(d => `
+    <div class="trend-card">
+      <div class="trend-header">
+        <span class="trend-title">${d.label}</span>
+        <div class="trend-toggle">
+          <button class="trend-btn active" onclick="setTrendMode('${d.id}','total',this)">Total</button>
+          <button class="trend-btn" onclick="setTrendMode('${d.id}','split',this)">By Category</button>
+        </div>
+      </div>
+      <canvas id="trend-${d.id}" height="120"></canvas>
+    </div>
+  `).join('');
+
+  TREND_DEFS.forEach(d => drawTrend(d, rows));
+}
+
+function setTrendMode(id, mode, btn) {
+  TREND_MODES[id] = mode;
+  btn.closest('.trend-toggle').querySelectorAll('.trend-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const rows = getFilteredRows(
+    document.getElementById('date-from').value,
+    document.getElementById('date-to').value
+  );
+  drawTrend(TREND_DEFS.find(d => d.id === id), rows);
+}
+
+function drawTrend(def, rows) {
+  const mode = TREND_MODES[def.id];
+  const ctx  = document.getElementById(`trend-${def.id}`).getContext('2d');
+  if (TREND_CHARTS[def.id]) TREND_CHARTS[def.id].destroy();
+
+  // Agrupar por fecha
+  const dates = [...new Set(rows.map(r => normalizeDate(r.date)))].sort();
+
+  let datasets = [];
+
+  if (mode === 'total') {
+    const byDate = {};
+    dates.forEach(d => byDate[d] = { spend:0, earnings:0, orders:0 });
+    rows.forEach(r => {
+      const d = normalizeDate(r.date);
+      if (!byDate[d]) return;
+      byDate[d].spend    += +r.spend    || 0;
+      byDate[d].earnings += +r.earnings || 0;
+      byDate[d].orders   += +r.orders   || 0;
+    });
+
+    const data = dates.map(d => {
+      const m = aggregate(rows.filter(r => normalizeDate(r.date) === d));
+      return getValue(def.id, m, byDate[d]);
+    });
+
+    datasets = [{
+      label: 'Total',
+      data,
+      borderColor: CAT_COLORS.total.line,
+      backgroundColor: CAT_COLORS.total.fill,
+      fill: true,
+      tension: 0.3,
+      pointRadius: 3,
+      borderWidth: 2,
+    }];
+  } else {
+    const cats = ['always-on','testing','otros'];
+    datasets = cats.map(cat => {
+      const catRows = rows.filter(r => r.category === cat);
+      const data = dates.map(d => {
+        const dayRows = catRows.filter(r => normalizeDate(r.date) === d);
+        const m = aggregate(dayRows);
+        const byDate = { spend:0, earnings:0, orders:0 };
+        dayRows.forEach(r => { byDate.spend+=+r.spend||0; byDate.earnings+=+r.earnings||0; byDate.orders+=+r.orders||0; });
+        return getValue(def.id, m, byDate);
+      });
+      return {
+        label: cat.charAt(0).toUpperCase() + cat.slice(1),
+        data,
+        borderColor: CAT_COLORS[cat].line,
+        backgroundColor: CAT_COLORS[cat].fill,
+        fill: false,
+        tension: 0.3,
+        pointRadius: 3,
+        borderWidth: 2,
+      };
+    });
+  }
+
+  TREND_CHARTS[def.id] = new Chart(ctx, {
+    type: 'line',
+    data: { labels: dates.map(d => d.slice(5)), datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color:'#475569', font:{ family:'Inter', size:11 } } },
+        tooltip: {
+          backgroundColor:'#fff', borderColor:'#E2E8F0', borderWidth:1,
+          titleColor:'#0F172A', bodyColor:'#475569',
+          callbacks: { label: c => ' '+c.dataset.label+': '+def.fmt(c.parsed.y) }
+        }
+      },
+      scales: {
+        x: { grid:{color:'rgba(226,232,240,.6)'}, ticks:{color:'#94A3B8', font:{family:'Inter',size:10}} },
+        y: { grid:{color:'rgba(226,232,240,.6)'}, ticks:{color:'#94A3B8', font:{family:'Inter',size:10}, callback: v => def.fmt(v)} }
+      }
+    }
+  });
+}
+
+function getValue(id, m, byDate) {
+  switch(id) {
+    case 'profit': return m.profit;
+    case 'orders': return byDate.orders;
+    case 'aov':    return m.aov;
+    case 'cpa':    return m.cpa;
+    case 'roas':   return m.roas;
+    default:       return 0;
+  }
+}
+</script>
 </body>
 </html>
