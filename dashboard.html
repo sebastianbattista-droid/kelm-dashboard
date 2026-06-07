@@ -455,8 +455,28 @@ function renderSummary(rows) {
 function renderBreakdown(rows) {
   const cats   = ['always-on','testing','otros'];
   const labels = { 'always-on':'Always-On', testing:'Testing', otros:'Otros' };
+
+  const totalProductCost = getProductCost();
+  const totalEarnings    = rows.reduce((s, r) => s + (+r.earnings||0), 0);
+
+  function aggregateCat(catRows) {
+    let spend=0, earnings=0, orders=0;
+    catRows.forEach(r => { spend+=+r.spend||0; earnings+=+r.earnings||0; orders+=+r.orders||0; });
+    const productCost  = totalEarnings > 0 ? totalProductCost * (earnings / totalEarnings) : 0;
+    const fees         = earnings * 0.045;
+    const costs        = spend + productCost + fees;
+    const profit       = earnings - costs;
+    return {
+      spend, earnings, orders, productCost, fees, costs, profit,
+      profitMargin: earnings>0 ? profit/earnings : 0,
+      roas:  spend>0  ? earnings/spend  : 0,
+      cpa:   orders>0 ? spend/orders    : 0,
+      aov:   orders>0 ? earnings/orders : 0
+    };
+  }
+
   document.getElementById('breakdown-grid').innerHTML = cats.map(cat => {
-    const m   = aggregate(rows.filter(r=>r.category===cat));
+    const m   = aggregateCat(rows.filter(r=>r.category===cat));
     const sem = roasSem(m.roas);
     return `<div class="cat-card">
       <div class="cat-header">
