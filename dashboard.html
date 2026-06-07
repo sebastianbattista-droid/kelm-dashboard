@@ -7,35 +7,33 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:       #060C18;
-    --surface:  #0A1628;
-    --surface2: #0F1F3A;
-    --border:   #1E3A5F;
-    --accent:   #7BB8E8;
-    --accent2:  #E8A020;
-    --text:     #F5F7FA;
-    --text2:    #8AAFC8;
-    --text3:    #4A6A88;
-    --green:    #2ECC8A;
-    --yellow:   #E8A020;
-    --red:      #E84848;
-    --mono: 'Inter', sans-serif;
-    --sans: 'Inter', sans-serif;
-  }
+  --bg:       #F8F9FC;
+  --surface:  #FFFFFF;
+  --surface2: #F1F4F9;
+  --border:   #E2E8F0;
+  --accent:   #2563EB;
+  --accent2:  #F59E0B;
+  --text:     #0F172A;
+  --text2:    #475569;
+  --text3:    #94A3B8;
+  --green:    #16A34A;
+  --yellow:   #D97706;
+  --red:      #DC2626;
+  --mono:     'Inter', sans-serif;
+  --sans:     'Inter', sans-serif;
+}
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; overflow-x:hidden; }
   body::before {
-    content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-    background-image: linear-gradient(rgba(123,184,232,.03) 1px,transparent 1px), linear-gradient(90deg,rgba(123,184,232,.03) 1px,transparent 1px);
-    background-size:40px 40px;
-  }
+  display: none;
+}
 
   /* HEADER */
   header {
     position:sticky; top:0; z-index:100;
     display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
     padding:16px 28px;
-    background:rgba(6,12,24,.92); backdrop-filter:blur(12px);
+    background:rgba(248,249,252,.95); backdrop-filter:blur(12px);
     border-bottom:1px solid var(--border);
   }
   .logo { font-size:13px; font-weight:700; letter-spacing:.15em; color:var(--accent); text-transform:uppercase; }
