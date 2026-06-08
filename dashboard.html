@@ -356,6 +356,8 @@ function getFilteredRows(from, to) {
 function normalizeDate(val) {
   if (!val) return '';
   if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+  // Extraer solo la parte de fecha del ISO string sin conversión de timezone
+  if (typeof val === 'string' && val.includes('T')) return val.split('T')[0];
   const d = new Date(val);
   if (isNaN(d.getTime())) return '';
   return d.toISOString().split('T')[0];
