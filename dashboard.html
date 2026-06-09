@@ -433,6 +433,8 @@ function aggregate(rows) {
 function renderSummary(rows) {
   const m   = aggregate(rows);
   const sem = roasSem(m.roas);
+  const activeDays = new Set(rows.map(r => normalizeDate(r.date)).filter(Boolean)).size;
+  const avgOrders  = activeDays > 0 ? m.orders / activeDays : 0;
   const cards = [
     { label:'Earnings',      value:fmt$(m.earnings),       cls:'accent' },
     { label:'Facebook Cost', value:fmt$(m.spend),          cls:'' },
@@ -445,6 +447,7 @@ function renderSummary(rows) {
     { label:'CPA',           value:fmt$(m.cpa),            cls:'' },
     { label:'AOV',           value:fmt$(m.aov),            cls:'' },
     { label:'Orders',        value:m.orders,               cls:'' },
+    { label:'Avg Orders/Day',value:avgOrders.toFixed(1),   cls:'' },
   ];
   document.getElementById('summary-cards').innerHTML = cards.map(c=>`
     <div class="card">
