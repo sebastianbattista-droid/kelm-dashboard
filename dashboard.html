@@ -661,7 +661,7 @@ function drawTrend(def, rows) {
       return getValue(def.id, m, byDate[d]);
     });
 
-    const avgValue = def.id === 'aov'
+    const avgValue = (def.id === 'aov' || def.id === 'orders')
   ? data.filter(v => v > 0).reduce((a, b) => a + b, 0) / (data.filter(v => v > 0).length || 1)
   : null;
 
