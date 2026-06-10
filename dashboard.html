@@ -515,6 +515,10 @@ function renderChart(rows) {
   const earnings = dates.map(d => byDate[d].earnings);
   const spend    = dates.map(d => byDate[d].spend);
 
+  const totalProductCost = getProductCost();
+  const totalEarnings    = rows.reduce((s, r) => s + (+r.earnings||0), 0);
+  const productCost = dates.map(d => totalEarnings > 0 ? totalProductCost * (byDate[d].earnings / totalEarnings) : 0);
+
   const ctx = document.getElementById('chart-canvas').getContext('2d');
   if (CHART) CHART.destroy();
   CHART = new Chart(ctx, {
@@ -523,7 +527,8 @@ function renderChart(rows) {
       labels: dates.map(d => d.slice(5)),
       datasets:[
         { label:'Earnings', data:earnings, backgroundColor:'rgba(123,184,232,.5)', borderColor:'rgba(123,184,232,.9)', borderWidth:1, borderRadius:3 },
-        { label:'FB Spend', data:spend,    backgroundColor:'rgba(232,160,32,.4)',  borderColor:'rgba(232,160,32,.8)',  borderWidth:1, borderRadius:3 }
+        { label:'FB Spend', data:spend,    backgroundColor:'rgba(232,160,32,.4)',  borderColor:'rgba(232,160,32,.8)',  borderWidth:1, borderRadius:3 },
+        { label:'Product Cost', data:productCost, backgroundColor:'rgba(220,38,38,.35)', borderColor:'rgba(220,38,38,.8)', borderWidth:1, borderRadius:3 }
       ]
     },
     options:{
