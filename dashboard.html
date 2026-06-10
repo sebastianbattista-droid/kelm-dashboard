@@ -526,9 +526,9 @@ function renderChart(rows) {
     data:{
       labels: dates.map(d => d.slice(5)),
       datasets:[
-        { label:'Earnings', data:earnings, backgroundColor:'rgba(123,184,232,.5)', borderColor:'rgba(123,184,232,.9)', borderWidth:1, borderRadius:3 },
-        { label:'FB Spend', data:spend,    backgroundColor:'rgba(232,160,32,.4)',  borderColor:'rgba(232,160,32,.8)',  borderWidth:1, borderRadius:3 },
-        { label:'Product Cost', data:productCost, backgroundColor:'rgba(220,38,38,.35)', borderColor:'rgba(220,38,38,.8)', borderWidth:1, borderRadius:3 }
+        { label:'Earnings', data:earnings, backgroundColor:'rgba(123,184,232,.5)', borderColor:'rgba(123,184,232,.9)', borderWidth:1, borderRadius:3, stack:'earnings' },
+        { label:'FB Spend', data:spend,    backgroundColor:'rgba(232,160,32,.4)',  borderColor:'rgba(232,160,32,.8)',  borderWidth:1, borderRadius:3, stack:'costs' },
+        { label:'Product Cost', data:productCost, backgroundColor:'rgba(220,38,38,.35)', borderColor:'rgba(220,38,38,.8)', borderWidth:1, borderRadius:3, stack:'costs' }
       ]
     },
     options:{
@@ -539,8 +539,8 @@ function renderChart(rows) {
           callbacks:{ label: c=>' '+c.dataset.label+': $'+c.parsed.y.toFixed(1) } }
       },
       scales:{
-        x:{ grid:{color:'rgba(30,58,95,.4)'}, ticks:{color:'#4A6A88', font:{family:'Inter',size:10}} },
-        y:{ grid:{color:'rgba(30,58,95,.4)'}, ticks:{color:'#4A6A88', font:{family:'Inter',size:10}, callback:v=>'$'+v.toFixed(0)} }
+        x:{ stacked:true, grid:{color:'rgba(30,58,95,.4)'}, ticks:{color:'#4A6A88', font:{family:'Inter',size:10}} },
+        y:{ stacked:true, grid:{color:'rgba(30,58,95,.4)'}, ticks:{color:'#4A6A88', font:{family:'Inter',size:10}, callback:v=>'$'+v.toFixed(0)} }
       }
     }
   });
