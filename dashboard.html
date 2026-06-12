@@ -214,6 +214,16 @@
   <!-- Dashboard -->
   <div id="dashboard-content" style="display:none">
 
+    <!-- AI Insights -->
+    <div class="section-header" id="ai-insights-header" style="display:none">
+      <span class="section-title">AI Insights (last 7 days)</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="cogs-bar" id="ai-insights-card" style="display:none;flex-direction:column;align-items:flex-start;gap:8px;">
+      <ul id="ai-insights-list" style="margin:0;padding-left:20px;font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--text);"></ul>
+      <div id="ai-insights-updated" style="font-family:var(--mono);font-size:10px;color:var(--muted);"></div>
+    </div>
+
     <!-- Supplier Payments -->
 <div class="cogs-bar">
   <span class="cogs-bar-label">Supplier Payment</span>
@@ -339,6 +349,7 @@ function renderDashboard() {
 
   const rows = getFilteredRows(from, to);
   renderPaymentBar();
+  renderInsights();
   renderSummary(rows);
   renderBreakdown(rows);
   renderChart(rows);
@@ -570,6 +581,34 @@ function fmtNum(n, decimals) {
 }
 function fmt$(n)   { return '$'+fmtNum(n, 1); }
 function fmtPct(n) { return fmtNum((n||0)*100, 1)+'%'; }
+// ── AI INSIGHTS ──────────────────────────────────────────────
+function renderInsights() {
+  const header = document.getElementById('ai-insights-header');
+  const card   = document.getElementById('ai-insights-card');
+  const list   = document.getElementById('ai-insights-list');
+  const updatedEl = document.getElementById('ai-insights-updated');
+
+  const all = (RAW && RAW.ai_insights) || [];
+  const entry = all.find(e => e.store === STORE);
+
+  if (!entry || !entry.insights) {
+    header.style.display = 'none';
+    card.style.display   = 'none';
+    return;
+  }
+
+  const bullets = String(entry.insights)
+    .split('\n')
+    .map(l => l.replace(/^[\s•\-\*]+/, '').trim())
+    .filter(Boolean);
+
+  list.innerHTML = bullets.map(b => `<li>${b}</li>`).join('');
+  updatedEl.textContent = entry.updated_at ? 'Updated ' + timeAgo(entry.updated_at) : '';
+
+  header.style.display = '';
+  card.style.display   = 'flex';
+}
+
 function fmtDate(d){ return d.toISOString().split('T')[0]; }
 function timeAgo(iso) {
   if (!iso) return '—';
