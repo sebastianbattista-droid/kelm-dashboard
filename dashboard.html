@@ -563,8 +563,13 @@ function roasSem(roas) {
   if (roas<ROAS_T.green)  return `<span class="semaforo green">GREEN</span>`;
   return `<span class="semaforo strong">STRONG</span>`;
 }
-function fmt$(n)   { return '$'+(n||0).toFixed(1); }
-function fmtPct(n) { return ((n||0)*100).toFixed(1)+'%'; }
+function fmtNum(n, decimals) {
+  const parts = (n||0).toFixed(decimals).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return parts.join(',');
+}
+function fmt$(n)   { return '$'+fmtNum(n, 1); }
+function fmtPct(n) { return fmtNum((n||0)*100, 1)+'%'; }
 function fmtDate(d){ return d.toISOString().split('T')[0]; }
 function timeAgo(iso) {
   if (!iso) return '—';
