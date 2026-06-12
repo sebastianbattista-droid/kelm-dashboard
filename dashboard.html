@@ -436,6 +436,7 @@ function renderSummary(rows) {
   const activeDays = new Set(rows.map(r => normalizeDate(r.date)).filter(Boolean)).size;
   const avgOrders  = activeDays > 0 ? m.orders / activeDays : 0;
   const avgCogs    = m.orders > 0 ? m.productCost / m.orders : 0;
+  const nonAdCostPct = m.earnings > 0 ? (m.productCost + m.fees) / m.earnings : 0;
   const cards = [
     { label:'Earnings',      value:fmt$(m.earnings),       cls:'accent' },
     { label:'Facebook Cost', value:fmt$(m.spend),          cls:'' },
@@ -450,6 +451,7 @@ function renderSummary(rows) {
     { label:'Orders',        value:m.orders,               cls:'' },
     { label:'Avg Orders/Day',value:avgOrders.toFixed(1),   cls:'' },
     { label:'Avg COGS',      value:fmt$(avgCogs),          cls:'' },
+    { label:'Non-Ad Costs %',value:fmtPct(nonAdCostPct),   cls:'' },
   ];
   document.getElementById('summary-cards').innerHTML = cards.map(c=>`
     <div class="card">
