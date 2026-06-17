@@ -525,21 +525,36 @@ function renderBreakdown(rows) {
 
 // ── CHART ────────────────────────────────────────────────────
 function renderChart(rows) {
+  const from = document.getElementById('date-from').value;
+  const to   = document.getElementById('date-to').value;
+
   const byDate = {};
   rows.forEach(r => {
     const d = normalizeDate(r.date);
     if (!d) return;
-    if (!byDate[d]) byDate[d] = { earnings:0, spend:0 };
+    if (!byDate[d]) byDate[d] = { earnings:0, spend:0, productCost:0 };
     byDate[d].earnings += +r.earnings||0;
     byDate[d].spend    += +r.spend||0;
   });
-  const dates    = Object.keys(byDate).sort();
-  const earnings = dates.map(d => byDate[d].earnings);
-  const spend    = dates.map(d => byDate[d].spend);
 
-  const totalProductCost = getProductCost();
-  const totalEarnings    = rows.reduce((s, r) => s + (+r.earnings||0), 0);
-  const productCost = dates.map(d => totalEarnings > 0 ? totalProductCost * (byDate[d].earnings / totalEarnings) : 0);
+  // product cost por fecha desde supplier_payments
+  if (RAW && RAW.supplier_payments) {
+    RAW.supplier_payments
+      .filter(p => {
+        const d = normalizeDate(p.date);
+        return (STORE === 'both' || p.store === STORE) && d >= from && d <= to;
+      })
+      .forEach(p => {
+        const d = normalizeDate(p.date);
+        if (!byDate[d]) byDate[d] = { earnings:0, spend:0, productCost:0 };
+        byDate[d].productCost += parseFloat(p.amount) || 0;
+      });
+  }
+
+  const dates      = Object.keys(byDate).sort();
+  const earnings   = dates.map(d => byDate[d].earnings);
+  const spend      = dates.map(d => byDate[d].spend);
+  const productCost = dates.map(d => byDate[d].productCost);
 
   const ctx = document.getElementById('chart-canvas').getContext('2d');
   if (CHART) CHART.destroy();
