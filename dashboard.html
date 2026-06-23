@@ -646,7 +646,9 @@ function renderInsights() {
   const insightsText = splitIdx >= 0 ? text.slice(0, splitIdx) : text;
   const recoText     = splitIdx >= 0 ? text.slice(splitIdx).replace(/^RECOMENDACIONES[:\s]*/i, '') : '';
 
-  const toLines = t => t.split('\n').map(l => l.replace(/^[\s•\-\*]+/, '').trim()).filter(Boolean);
+  const toLines = t => t.split('\n')
+    .map(l => l.replace(/^[\s#•\-\*]+/, '').trim())
+    .filter(l => l && !/^INSIGHTS$/i.test(l));
 
   renderBulletList(list, toLines(insightsText));
   renderBulletList(recoList, toLines(recoText));
