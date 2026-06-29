@@ -555,6 +555,11 @@ function renderChart(rows) {
   const earnings   = dates.map(d => byDate[d].earnings);
   const spend      = dates.map(d => byDate[d].spend);
   const productCost = dates.map(d => byDate[d].productCost);
+  const profitMargin = dates.map(d => {
+    const e = byDate[d].earnings;
+    const costs = byDate[d].spend + byDate[d].productCost + e * 0.045;
+    return e > 0 ? ((e - costs) / e) * 100 : null;
+  });
 
   const ctx = document.getElementById('chart-canvas').getContext('2d');
   if (CHART) CHART.destroy();
@@ -563,9 +568,10 @@ function renderChart(rows) {
     data:{
       labels: dates.map(d => d.slice(5)),
       datasets:[
-        { label:'Earnings', data:earnings, backgroundColor:'rgba(34,197,94,.5)', borderColor:'rgba(34,197,94,.9)', borderWidth:1, borderRadius:3, stack:'earnings' },
-        { label:'FB Spend', data:spend,    backgroundColor:'rgba(59,130,246,.4)',  borderColor:'rgba(59,130,246,.8)',  borderWidth:1, borderRadius:3, stack:'costs' },
-        { label:'Product Cost', data:productCost, backgroundColor:'rgba(220,38,38,.35)', borderColor:'rgba(220,38,38,.8)', borderWidth:1, borderRadius:3, stack:'costs' }
+        { label:'Earnings', data:earnings, backgroundColor:'rgba(34,197,94,.5)', borderColor:'rgba(34,197,94,.9)', borderWidth:1, borderRadius:3, stack:'earnings', yAxisID:'y' },
+        { label:'FB Spend', data:spend,    backgroundColor:'rgba(59,130,246,.4)',  borderColor:'rgba(59,130,246,.8)',  borderWidth:1, borderRadius:3, stack:'costs', yAxisID:'y' },
+        { label:'Product Cost', data:productCost, backgroundColor:'rgba(220,38,38,.35)', borderColor:'rgba(220,38,38,.8)', borderWidth:1, borderRadius:3, stack:'costs', yAxisID:'y' },
+        { label:'Profit Margin', data:profitMargin, type:'line', yAxisID:'y2', borderColor:'rgba(251,191,36,.9)', backgroundColor:'rgba(251,191,36,.1)', borderWidth:2, pointRadius:3, pointBackgroundColor:'rgba(251,191,36,.9)', tension:.3, fill:false }
       ]
     },
     options:{
@@ -573,11 +579,14 @@ function renderChart(rows) {
       plugins:{
         legend:{ labels:{ color:'#8AAFC8', font:{ family:'Inter', size:11 } } },
         tooltip:{ backgroundColor:'#0F1F3A', borderColor:'#1E3A5F', borderWidth:1, titleColor:'#7BB8E8', bodyColor:'#F5F7FA',
-          callbacks:{ label: c=>' '+c.dataset.label+': $'+c.parsed.y.toFixed(1) } }
+          callbacks:{ label: c => c.dataset.label === 'Profit Margin'
+            ? ' '+c.dataset.label+': '+c.parsed.y.toFixed(1)+'%'
+            : ' '+c.dataset.label+': $'+c.parsed.y.toFixed(1) } }
       },
       scales:{
         x:{ stacked:true, grid:{color:'rgba(30,58,95,.4)'}, ticks:{color:'#4A6A88', font:{family:'Inter',size:10}} },
-        y:{ stacked:true, grid:{color:'rgba(30,58,95,.4)'}, ticks:{color:'#4A6A88', font:{family:'Inter',size:10}, callback:v=>'$'+v.toFixed(0)} }
+        y:{ stacked:true, grid:{color:'rgba(30,58,95,.4)'}, ticks:{color:'#4A6A88', font:{family:'Inter',size:10}, callback:v=>'$'+v.toFixed(0)} },
+        y2:{ position:'right', grid:{drawOnChartArea:false}, ticks:{color:'rgba(251,191,36,.8)', font:{family:'Inter',size:10}, callback:v=>v.toFixed(0)+'%'} }
       }
     }
   });
