@@ -175,6 +175,7 @@
     <div class="store-tabs">
       <button class="store-tab active" onclick="setStore('kelm')">The Kelm</button>
       <button class="store-tab" onclick="setStore('maloa')">Maloa</button>
+      <button class="store-tab" onclick="setStore('nunni')">Nunni</button>
       <button class="store-tab" onclick="setStore('both')">Both</button>
     </div>
   </div>
@@ -244,6 +245,7 @@
       <select id="payment-store" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:5px 10px;border-radius:6px;outline:none;">
         <option value="kelm">The Kelm</option>
         <option value="maloa">Maloa</option>
+        <option value="nunni">Nunni</option>
       </select>
     </div>
     <div class="cogs-field">
@@ -297,7 +299,7 @@ let CHART = null;
 let STORE = 'kelm';
 
 const ROAS_T = { red:1.61, yellow:1.77, green:2.42 };
-const STORE_LABELS = { kelm:'The Kelm', maloa:'Maloa', both:'Both Stores' };
+const STORE_LABELS = { kelm:'The Kelm', maloa:'Maloa', nunni:'Nunni', both:'Both Stores' };
 
 // ── INIT ─────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
@@ -317,7 +319,7 @@ fetchData(url);
 function setStore(s) {
   STORE = s;
   document.querySelectorAll('.store-tab').forEach((el, i) => {
-    el.classList.toggle('active', ['kelm','maloa','both'][i] === s);
+    el.classList.toggle('active', ['kelm','maloa','nunni','both'][i] === s);
   });
   if (RAW) renderDashboard();
 }
