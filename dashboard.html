@@ -317,7 +317,8 @@ function saveSheetUrl() {
 // ── FETCH ────────────────────────────────────────────────────
 async function fetchData(url) {
   try {
-    const res  = await fetch(url);
+    const cacheBustedUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+    const res  = await fetch(cacheBustedUrl, { cache: 'no-store' });
     const json = await res.json();
     RAW = json;
     document.getElementById('last-sync').textContent = 'Last sync ' + timeAgo(json.lastSync);
