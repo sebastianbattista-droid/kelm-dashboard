@@ -175,6 +175,7 @@
     <div class="store-tabs">
       <button class="store-tab active" onclick="setStore('kelm')">The Kelm</button>
       <button class="store-tab" onclick="setStore('maloa')">Maloa</button>
+      <button class="store-tab" onclick="setStore('nunni')">Nunni</button>
       <button class="store-tab" onclick="setStore('both')">Both</button>
     </div>
   </div>
@@ -227,6 +228,7 @@
       <select id="payment-store" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:5px 10px;border-radius:6px;outline:none;">
         <option value="kelm">The Kelm</option>
         <option value="maloa">Maloa</option>
+        <option value="nunni">Nunni</option>
       </select>
     </div>
     <div class="cogs-field">
@@ -280,7 +282,7 @@ let CHART = null;
 let STORE = 'kelm';
 
 const ROAS_T = { red:1.61, yellow:1.77, green:2.42 };
-const STORE_LABELS = { kelm:'The Kelm', maloa:'Maloa', both:'Both Stores' };
+const STORE_LABELS = { kelm:'The Kelm', maloa:'Maloa', nunni:'Nunni', both:'Both Stores' };
 
 // ── INIT ─────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
@@ -291,7 +293,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('date-from').value = fmtDate(from);
     document.getElementById('date-to').value   = fmtDate(yesterday);
 
-const url = 'https://script.google.com/macros/s/AKfycbwjZ_PA3r9bbKUMYL6j9RIGLs9vNQcgqhWDkW1UocplTbDv_IFv-zbLU8TURnk0iULldA/exec';
+const url = 'https://script.google.com/macros/s/AKfycbwLX4wcGwBCP22R-E_-lLfIkxnpOeo8erGC7UPt4tOK4NaDjXEHYh0ZFG_-1sdptglcMA/exec';
 localStorage.setItem(KEY_URL, url);
 fetchData(url);
 });
@@ -300,7 +302,7 @@ fetchData(url);
 function setStore(s) {
   STORE = s;
   document.querySelectorAll('.store-tab').forEach((el, i) => {
-    el.classList.toggle('active', ['kelm','maloa','both'][i] === s);
+    el.classList.toggle('active', ['kelm','maloa','nunni','both'][i] === s);
   });
   if (RAW) renderDashboard();
 }
@@ -508,21 +510,41 @@ function renderBreakdown(rows) {
 
 // ── CHART ────────────────────────────────────────────────────
 function renderChart(rows) {
+  const from = document.getElementById('date-from').value;
+  const to   = document.getElementById('date-to').value;
+
   const byDate = {};
   rows.forEach(r => {
     const d = normalizeDate(r.date);
     if (!d) return;
-    if (!byDate[d]) byDate[d] = { earnings:0, spend:0 };
+    if (!byDate[d]) byDate[d] = { earnings:0, spend:0, productCost:0 };
     byDate[d].earnings += +r.earnings||0;
     byDate[d].spend    += +r.spend||0;
   });
-  const dates    = Object.keys(byDate).sort();
-  const earnings = dates.map(d => byDate[d].earnings);
-  const spend    = dates.map(d => byDate[d].spend);
 
-  const totalProductCost = getProductCost();
-  const totalEarnings    = rows.reduce((s, r) => s + (+r.earnings||0), 0);
-  const productCost = dates.map(d => totalEarnings > 0 ? totalProductCost * (byDate[d].earnings / totalEarnings) : 0);
+  // product cost por fecha desde supplier_payments
+  if (RAW && RAW.supplier_payments) {
+    RAW.supplier_payments
+      .filter(p => {
+        const d = normalizeDate(p.date);
+        return (STORE === 'both' || p.store === STORE) && d >= from && d <= to;
+      })
+      .forEach(p => {
+        const d = normalizeDate(p.date);
+        if (!byDate[d]) byDate[d] = { earnings:0, spend:0, productCost:0 };
+        byDate[d].productCost += parseFloat(p.amount) || 0;
+      });
+  }
+
+  const dates      = Object.keys(byDate).sort();
+  const earnings   = dates.map(d => byDate[d].earnings);
+  const spend      = dates.map(d => byDate[d].spend);
+  const productCost = dates.map(d => byDate[d].productCost);
+  const profitMargin = dates.map(d => {
+    const e = byDate[d].earnings;
+    const costs = byDate[d].spend + byDate[d].productCost + e * 0.045;
+    return e > 0 ? ((e - costs) / e) * 100 : null;
+  });
 
   const ctx = document.getElementById('chart-canvas').getContext('2d');
   if (CHART) CHART.destroy();
@@ -531,9 +553,10 @@ function renderChart(rows) {
     data:{
       labels: dates.map(d => d.slice(5)),
       datasets:[
-        { label:'Earnings', data:earnings, backgroundColor:'rgba(123,184,232,.5)', borderColor:'rgba(123,184,232,.9)', borderWidth:1, borderRadius:3, stack:'earnings' },
-        { label:'FB Spend', data:spend,    backgroundColor:'rgba(232,160,32,.4)',  borderColor:'rgba(232,160,32,.8)',  borderWidth:1, borderRadius:3, stack:'costs' },
-        { label:'Product Cost', data:productCost, backgroundColor:'rgba(220,38,38,.35)', borderColor:'rgba(220,38,38,.8)', borderWidth:1, borderRadius:3, stack:'costs' }
+        { label:'Earnings', data:earnings, backgroundColor:'rgba(34,197,94,.5)', borderColor:'rgba(34,197,94,.9)', borderWidth:1, borderRadius:3, stack:'earnings', yAxisID:'y' },
+        { label:'FB Spend', data:spend,    backgroundColor:'rgba(59,130,246,.4)',  borderColor:'rgba(59,130,246,.8)',  borderWidth:1, borderRadius:3, stack:'costs', yAxisID:'y' },
+        { label:'Product Cost', data:productCost, backgroundColor:'rgba(220,38,38,.35)', borderColor:'rgba(220,38,38,.8)', borderWidth:1, borderRadius:3, stack:'costs', yAxisID:'y' },
+        { label:'Profit Margin', data:profitMargin, type:'line', yAxisID:'y2', borderColor:'rgba(251,191,36,.9)', backgroundColor:'rgba(251,191,36,.1)', borderWidth:2, pointRadius:3, pointBackgroundColor:'rgba(251,191,36,.9)', tension:.3, fill:false }
       ]
     },
     options:{
@@ -541,11 +564,14 @@ function renderChart(rows) {
       plugins:{
         legend:{ labels:{ color:'#8AAFC8', font:{ family:'Inter', size:11 } } },
         tooltip:{ backgroundColor:'#0F1F3A', borderColor:'#1E3A5F', borderWidth:1, titleColor:'#7BB8E8', bodyColor:'#F5F7FA',
-          callbacks:{ label: c=>' '+c.dataset.label+': $'+c.parsed.y.toFixed(1) } }
+          callbacks:{ label: c => c.dataset.label === 'Profit Margin'
+            ? ' '+c.dataset.label+': '+c.parsed.y.toFixed(1)+'%'
+            : ' '+c.dataset.label+': $'+c.parsed.y.toFixed(1) } }
       },
       scales:{
         x:{ stacked:true, grid:{color:'rgba(30,58,95,.4)'}, ticks:{color:'#4A6A88', font:{family:'Inter',size:10}} },
-        y:{ stacked:true, grid:{color:'rgba(30,58,95,.4)'}, ticks:{color:'#4A6A88', font:{family:'Inter',size:10}, callback:v=>'$'+v.toFixed(0)} }
+        y:{ stacked:true, grid:{color:'rgba(30,58,95,.4)'}, ticks:{color:'#4A6A88', font:{family:'Inter',size:10}, callback:v=>'$'+v.toFixed(0)} },
+        y2:{ position:'right', grid:{drawOnChartArea:false}, ticks:{color:'rgba(251,191,36,.8)', font:{family:'Inter',size:10}, callback:v=>v.toFixed(0)+'%'} }
       }
     }
   });
