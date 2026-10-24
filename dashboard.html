@@ -258,6 +258,14 @@
   <canvas id="chart-canvas"></canvas>
   </div>
 
+    <div class="section-header">
+  <span class="section-title">Avg Orders by Day of Week</span>
+  <div class="section-line"></div>
+    </div>
+  <div class="chart-card">
+  <canvas id="dow-chart-canvas"></canvas>
+  </div>
+
 <div class="section-header">
   <span class="section-title">Trends</span>
   <div class="section-line"></div>
@@ -342,6 +350,7 @@ function renderDashboard() {
   renderSummary(rows);
   renderBreakdown(rows);
   renderChart(rows);
+  renderDowChart(rows);
   renderTrendCharts(rows);
 }
 
@@ -596,6 +605,55 @@ const CAT_COLORS = {
   testing:    { line:'#2563EB', fill:'rgba(37,99,235,.08)' },
   otros:      { line:'#94A3B8', fill:'rgba(148,163,184,.08)' },
 };
+
+// ── DAY OF WEEK CHART ───────────────────────────────────────
+let DOW_CHART = null;
+function renderDowChart(rows) {
+  const byDate = {};
+  rows.forEach(r => {
+    const d = normalizeDate(r.date);
+    if (!d) return;
+    byDate[d] = (byDate[d] || 0) + (+r.orders || 0);
+  });
+
+  const DOW_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const sums   = [0,0,0,0,0,0,0];
+  const counts = [0,0,0,0,0,0,0];
+
+  Object.keys(byDate).forEach(d => {
+    const parts = d.split('-').map(Number);
+    const dt = new Date(parts[0], parts[1]-1, parts[2]);
+    const dow = dt.getDay();
+    sums[dow]   += byDate[d];
+    counts[dow] += 1;
+  });
+
+  const avgOrders = sums.map((s, i) => counts[i] > 0 ? s / counts[i] : 0);
+
+  const ctx = document.getElementById('dow-chart-canvas').getContext('2d');
+  if (DOW_CHART) DOW_CHART.destroy();
+  DOW_CHART = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: DOW_LABELS,
+      datasets:[
+        { label:'Avg Orders', data:avgOrders, backgroundColor:'rgba(37,99,235,.5)', borderColor:'rgba(37,99,235,.9)', borderWidth:1, borderRadius:4 }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ backgroundColor:'#0F1F3A', borderColor:'#1E3A5F', borderWidth:1, titleColor:'#7BB8E8', bodyColor:'#F5F7FA',
+          callbacks:{ label: c => ' Avg orders: '+c.parsed.y.toFixed(1) } }
+      },
+      scales:{
+        x:{ grid:{color:'rgba(30,58,95,.4)'}, ticks:{color:'#4A6A88', font:{family:'Inter',size:10}} },
+        y:{ grid:{color:'rgba(30,58,95,.4)'}, ticks:{color:'#4A6A88', font:{family:'Inter',size:10}, callback:v=>v.toFixed(0)}, beginAtZero:true }
+      }
+    }
+  });
+}
 
 function renderTrendCharts(rows) {
   const container = document.getElementById('trend-charts');
